@@ -923,44 +923,6 @@ const QUESTIONS = [
 ];
 
 // ============================================================
-// RANKING (Google Sheets 연동)
-// ============================================================
-// Google Apps Script 웹앱 배포 URL을 아래에 넣으세요
-// 예: https://script.google.com/macros/s/XXXX/exec
-const RANKING_URL = '';  // ← 여기에 웹앱 URL 입력
-
-function rankingSubmit(score, correct) {
-  console.log('랭킹 제출 시도...');
-  if (!RANKING_URL) {
-    console.warn('RANKING_URL이 설정되지 않았습니다.');
-    return;
-  }
-  const payload = {
-    name: G.playerName,
-    score: score,
-    correct: correct
-  };
-  fetch(RANKING_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(payload)
-  }).catch(err => console.warn('랭킹 제출 실패:', err));
-}
-
-async function rankingLoad() {
-  if (!RANKING_URL) return [];
-  try {
-    const res = await fetch(RANKING_URL);
-    const data = await res.json();
-    return data.ranking || [];
-  } catch (err) {
-    console.warn('랭킹 불러오기 실패:', err);
-    return [];
-  }
-}
-
-// ============================================================
 // GAME STATE
 // ============================================================
 let G = {
@@ -1035,47 +997,8 @@ function renderStart() {
       <button class="btn-primary" onclick="startGame()" style="width:100%;max-width:300px;">
         게임 시작
       </button>
-      <button class="btn-secondary" onclick="showRanking()" style="width:100%;max-width:300px;margin-top:8px;">
-        🏆 랭킹 보기
-      </button>
     </div>
-    <div id="ranking-area"></div>
   `);
-}
-
-// ============================================================
-// RANKING UI
-// ============================================================
-async function showRanking() {
-  const area = $('ranking-area');
-  if (!area) return;
-  area.innerHTML = '<div style="text-align:center;padding:20px;color:var(--chalk-dim);">랭킹 불러오는 중...</div>';
-
-  let entries = await rankingLoad();
-
-  if (!entries || entries.length === 0) {
-    area.innerHTML = `
-      <div class="panel" style="text-align:center;color:var(--chalk-dim);">
-        아직 랭킹이 없거나, RANKING_URL이 설정되지 않았습니다.
-      </div>`;
-    return;
-  }
-
-  const medals = ['🥇', '🥈', '🥉'];
-  const rows = entries.slice(0, 10).map((e, i) => `
-    <div class="ranking-row" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">
-      <div style="font-size:1.2rem;width:36px;">${medals[i] || (i+1)+'위'}</div>
-      <div style="flex:1;font-weight:500;color:var(--chalk);">${e.name}</div>
-      <div style="color:var(--gold);font-weight:700;">${e.score}점</div>
-      <div style="color:var(--chalk-dim);width:50px;text-align:right;">${e.correct}개</div>
-    </div>
-  `).join('');
-
-  area.innerHTML = `
-    <div class="panel">
-      <h3 style="font-family:var(--font-display);color:var(--gold);margin-bottom:12px;">🏆 태양계 랭킹 TOP 10</h3>
-      ${rows}
-    </div>`;
 }
 
 function startGame() {
@@ -1558,10 +1481,6 @@ function renderResult() {
   else if (pct >= 50) { grade = '탐험가'; gradeIcon = '🚀'; }
   else { grade = '초보 탐험가'; gradeIcon = '🔭'; }
 
-  // 랭킹 등록 (정답 수 계산)
-  const totalCorrect = QUESTIONS.length - G.wrongAnswers.length;
-  setTimeout(() => rankingSubmit(G.score, totalCorrect), 300);
-
 
   let wrongHTML = '';
   if (G.wrongAnswers.length > 0) {
@@ -1603,9 +1522,6 @@ function renderResult() {
     <div style="text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
       <button class="btn-secondary" onclick="renderStart()">메인으로</button>
       <button class="btn-primary" onclick="startGame()">다시 하기</button>
-    </div>
-    <div style="text-align:center;margin-top:12px;">
-      <button class="btn-secondary" onclick="showRanking()">🏆 랭킹 보기</button>
     </div>
   `);
 }
